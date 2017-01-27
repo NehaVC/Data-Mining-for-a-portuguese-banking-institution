@@ -1,0 +1,368 @@
+setwd("C:/Users/Neha/Documents/737/Project")
+training_data <- read.csv("bank-additional-full-new.csv")
+test_data <- read.csv("bank_test_data.csv")
+
+
+
+
+training_data$TDA_group[training_data$term_deposit_amount< 5000] <- "<5000"
+training_data$TDA_group[training_data$term_deposit_amount>= 5000 & training_data$term_deposit_amount<=10000] <- "5000-10000"
+training_data$TDA_group[training_data$term_deposit_amount>= 10001 & training_data$term_deposit_amount<=15000] <- "10001-15000"
+training_data$TDA_group[training_data$term_deposit_amount>= 15001 & training_data$term_deposit_amount<=20000] <- "15001-20000"
+training_data$TDA_group[training_data$term_deposit_amount>= 20001 & training_data$term_deposit_amount<=25000] <- "20001-25000"
+training_data$TDA_group[training_data$term_deposit_amount> 25000] <- ">25000"
+
+training_data$age_group[training_data$age < 18] <- "<18"
+training_data$age_group[training_data$age >= 18 & training_data$age<=24] <- "18-24"
+training_data$age_group[training_data$age >= 25 & training_data$age<=34] <- "25-34"
+training_data$age_group[training_data$age >= 35 & training_data$age<=44] <- "35-44"
+training_data$age_group[training_data$age >= 45 & training_data$age<=54] <- "45-54"
+training_data$age_group[training_data$age >= 55 & training_data$age<=64] <- "55-64"
+training_data$age_group[training_data$age > 64] <- ">64"
+
+training_data$balance_group[training_data$balance < 5000] <- "<5000"
+training_data$balance_group[training_data$balance >= 5000 & training_data$balance<=10000] <- "5000-10000"
+training_data$balance_group[training_data$balance >= 10001 & training_data$balance<=15000] <- "10001-15000"
+training_data$balance_group[training_data$balance >= 15001 & training_data$balance<=20000] <- "15001-20000"
+training_data$balance_group[training_data$balance >= 20001 & training_data$balance<=25000] <- "20001-25000"
+training_data$balance_group[training_data$balance > 25000] <- ">25000"
+
+test_data$TDA_group[test_data$term_deposit_amount< 5000] <- "<5000"
+test_data$TDA_group[test_data$term_deposit_amount>= 5000 & test_data$term_deposit_amount<=10000] <- "5000-10000"
+test_data$TDA_group[test_data$term_deposit_amount>= 10001 & test_data$term_deposit_amount<=15000] <- "10001-15000"
+test_data$TDA_group[test_data$term_deposit_amount>= 15001 & test_data$term_deposit_amount<=20000] <- "15001-20000"
+test_data$TDA_group[test_data$term_deposit_amount>= 20001 & test_data$term_deposit_amount<=25000] <- "20001-25000"
+test_data$TDA_group[test_data$term_deposit_amount> 25000] <- ">25000"
+
+test_data$age_group[test_data$age < 18] <- "<18"
+test_data$age_group[test_data$age >= 18 & test_data$age<=24] <- "18-24"
+test_data$age_group[test_data$age >= 25 & test_data$age<=34] <- "25-34"
+test_data$age_group[test_data$age >= 35 & test_data$age<=44] <- "35-44"
+test_data$age_group[test_data$age >= 45 & test_data$age<=54] <- "45-54"
+test_data$age_group[test_data$age >= 55 & test_data$age<=64] <- "55-64"
+test_data$age_group[test_data$age > 64] <- ">64"
+
+test_data$balance_group[test_data$balance < 5000] <- "<5000"
+test_data$balance_group[test_data$balance >= 5000 & test_data$balance<=10000] <- "5000-10000"
+test_data$balance_group[test_data$balance >= 10001 & test_data$balance<=15000] <- "10001-15000"
+test_data$balance_group[test_data$balance >= 15001 & test_data$balance<=20000] <- "15001-20000"
+test_data$balance_group[test_data$balance >= 20001 & test_data$balance<=25000] <- "20001-25000"
+test_data$balance_group[test_data$balance > 25000] <- ">25000"
+
+
+
+
+
+
+
+
+library(rpart)
+library(caret)
+library(e1071)
+library(data.table)
+library(ggplot2)
+
+
+
+#RANDOM FOREST
+#Data preprocessing
+
+## define groups of Term Deposit Amount
+rfbank=data.frame(training_data)
+rfbank$y=recode(rfbank$y,"'yes'=1;else=0")
+rfbank$TDA_group=recode(rfbank$TDA_group,"'<5000'=1;'5001-10000'=2;'10001-15000'=3;'15001-20000'=4;'20001-25000'=5;else=6")
+
+
+#Omit the unused variables
+rfbank <- rfbank[, c(-1,-5,-6,-9,-12,-13,-14,-15)]
+
+rfxbank <- model.matrix(y~.,data=rfbank)[,-1]
+rfxbank[1:3,]
+
+
+#Training and testing sets
+
+n <- length(rfbank$y)  #Number of observation in the source data
+n1 <- floor(n*0.8)      #60% percent of the total number of observations
+n2 <- (n - n1)          #40% percent of the total number of observations
+
+#Create training and test data sets
+set.seed(1)
+RFtrain <- sample(1:n, n1)
+RFxtrain <- rfxbank[RFtrain,]
+RFxtest <- rfxbank[-RFtrain,]
+RFytrain <- rfbank$y[RFtrain]
+RFytest <- rfbank$y[-RFtrain]
+
+RFtrainingds <- data.frame(y=RFytrain, RFxtrain)
+RFtestds <- data.frame(y=RFytest,RFxtest)
+View(RFtrainingds)
+
+#Random Forest Classification
+library(randomForest)
+RF  <-randomForest(y~., data=RFtrainingds)
+
+## prediction: Predicted response adn probability for cases in test set
+RFPredResp <- predict(RF, newdata=RFtestds) #Prediction of response
+RFPredProb <- predict(RF, newdata=RFtestds, type="prob")
+RFyEst <- data.frame(RFytest, ptest=RFPredProb[,2])
+RFyEst[1:10,]
+View(RFPredProb)
+View(RFyEst)
+
+#Confusion matrix 
+RFt = table(observed=RFtestds[,'y'], predict=RFPredResp)
+RFt
+
+#Misclassification rate
+RFmiscRate <- (RFt[1,2]+RFt[2,1])/n2
+RFmiscRate
+RFacc=1-RFmiscRate
+RFacc
+
+#Lift Curve
+
+# Order cases in test set according to their success prob
+# actual outcome shown next to it
+RFbb=data.frame(ptest=RFPredProb[,2], ytest=as.numeric(levels(RFytest)[RFytest]))
+
+RFbb1=RFbb[order(RFbb$ptest,decreasing=TRUE),]
+
+#Cases with large probabilities of success
+RFbb1[which(RFbb1$ptest >= 0.48),] 
+
+# overall success prob in the evaluation data set
+RFxbar=mean(as.numeric(levels(RFytest)[RFytest]))
+RFxbar
+
+# Calculating the lift
+# cumulative 1's sorted by predicted values
+# cumulative 1's using the average success prob from evaluation set
+RFaxis=dim(n2)
+RFax=dim(n2)
+RFay=dim(n2)
+RFaxis[1]=1
+RFax[1]=RFxbar
+RFay[1]=RFbb1[1,2]
+
+for (i in 2:n2) {
+  RFaxis[i]=i
+  RFax[i]=RFxbar*i
+  RFay[i]=RFay[i-1]+RFbb1[i,2]
+}
+RFaaa=cbind(RFbb1[,1],RFbb1[,2],RFay,RFax)
+RFaaa[1:100,]
+
+plot(RFaxis,RFay,
+     type="l", col="green", lwd=2,
+     xlab="Number of cases",
+     ylab="Number of successes",
+     main="Lift: Cum successes sorted by pred value/success probability for Random Forest")
+points(RFaxis,RFax,type="l",lwd=2)
+
+
+index = sample(2, nrow(training_data), replace=TRUE, prob=c(0.8, 0.2))
+trainsubsetData = training_data[index==1, ]
+testsubsetData = training_data[index==2, ]
+
+
+
+write.csv(newtrainingdata, "New Training Data.csv")
+newtrainingdata <- read.csv("New Training Data.csv")
+
+
+nbbank=data.frame(training_data)
+nbbank$y=recode(nbbank$y,"'yes'=1;else=0")
+response=as.numeric(levels(nbbank$y)[nbbank$y])
+response
+#Training and testing sets 
+
+## determining test and evaluation data sets
+n=length(nbbank$TDA_group) #Number of observation in the source data
+n
+n1=floor(n*(0.6))
+n1
+n2=n-n1
+n2
+
+set.seed(1)
+nbtrain=sample(1:n,n1)
+NB <- naiveBayes(TDA_group~age_group+balance_group+housing+loan+poutcome, data=training_data)
+summary(NB)
+## determining marginal probabilities
+tttt=cbind(nbbank$age_group[nbtrain],
+           nbbank$balance_group[nbtrain],
+           nbbank$housing[nbtrain],
+           nbbank$loan[nbtrain],
+           nbbank$poutcome[nbtrain],
+           nbbank$TDA_group[nbtrain],
+           response[nbtrain])
+response[nbtrain]
+tttrain0=tttt[tttt[,7]<0.5,] #Select observations with response < 0.5
+tttrain1=tttt[tttt[,7]>0.5,] #Select observations with response > 0.5
+
+## prior probabilities
+tbank=table(response[nbtrain])
+tbank=tbank/sum(tbank)
+tbank
+
+## age_group
+ts0=table(tttrain0[,1])
+ts0=ts0/sum(ts0)
+ts0
+ts1=table(tttrain1[,1])
+ts1=ts1/sum(ts1)
+ts1
+
+## balance_group
+tc0=table(tttrain0[,2])
+
+tc0=tc0/sum(tc0)
+tc0
+tc1=table(tttrain1[,2])
+tc1=tc1/sum(tc1)
+tc1
+
+## housing
+td0=table(tttrain0[,3])
+td0=td0/sum(td0)
+td0
+td1=table(tttrain1[,3])
+td1=td1/sum(td1)
+td1
+
+## loan
+to0=table(tttrain0[,4])
+to0=to0/sum(to0)
+to0
+to1=table(tttrain1[,4])
+to1=to1/sum(to1)
+to1
+
+
+## poutcome
+tw0=table(tttrain0[,5])
+tw0=tw0/sum(tw0)
+tw0
+tw1=table(tttrain1[,5])
+tw1=tw1/sum(tw1)
+tw1
+
+## TDA_group
+tdw0=table(tttrain0[,6])
+tdw0=tdw0/sum(tdw0)
+tdw0
+tdw1=table(tttrain1[,6])
+tdw1=tdw1/sum(tdw1)
+tdw1
+
+
+## creating test data set
+tt=cbind(nbbank$age_group[-nbtrain],
+           nbbank$balance_group[-nbtrain],
+           nbbank$housing[-nbtrain],
+           nbbank$loan[-nbtrain],
+           nbbank$poutcome[-nbtrain],
+           nbbank$TDA_group[-nbtrain],
+           response[-nbtrain])
+
+response[-nbtrain]
+## creating predictions, stored in gg
+p0=ts0[tt[,1]]*tc0[tt[,2]]*td0[tt[,3]]*to0[tt[,4]]*tw0[tt[,5]]*tdw0[tt[,6]]
+p1=ts1[tt[,1]]*tc1[tt[,2]]*td1[tt[,3]]*to1[tt[,4]]*tw1[tt[,5]]*tdw1[tt[,6]]
+gg=(p1*tbank[2])/(p1*tbank[2]+p0*tbank[1])
+
+
+##Coding as 1 if probability 0.5 or larger
+nbgg1=floor(gg+0.5)
+View(nbgg1)
+response[-nbtrain]
+nbttt=table(response[-nbtrain],nbgg1)
+nbttt
+nberror=(nbttt[1,2]+nbttt[2,1])/n2
+nberror
+nbacc=1-nberror
+nbacc
+
+
+## Here we calculate the lift (see Chapter 4)
+## The output is not shown in the text
+nbbb=cbind(gg,response[-nbtrain])
+nbbb1=nbbb[order(gg,decreasing=TRUE),]
+
+
+## order cases in test set naccording to their success prob
+## actual outcome shown next to it
+## overall success (delay) prob in evaluation set
+nbxbar=mean(response[-nbtrain])
+nbxbar
+
+## calculating the lift
+## cumulative 1's sorted by predicted values
+## cumulative 1's using the average success prob from training set
+nbaxis=dim(n2)
+nbax=dim(n2)
+nbay=dim(n2)
+nbaxis[1]=1
+nbax[1]=nbxbar
+nbay[1]=nbbb1[1,2]
+
+for (i in 2:n2) {
+  nbaxis[i]=i
+  nbax[i]=nbxbar*i
+  nbay[i]=nbay[i-1]+nbbb1[i,2]
+}
+
+nbaaa=cbind(nbbb1[,1],nbbb1[,2],nbay,nbax)
+nbaaa[1:100,]
+
+plot(nbaxis,nbay, 
+     type="l", col="red", lwd=2,
+     xlab="Number of cases",
+     ylab="Number of successes",
+     main="Lift: Cum successes sorted by pred value/success probability for Naive Bayes")
+points(nbaxis,nbax,type="l",lwd=2)
+
+
+
+training_data1 <- data.frame(training_data)
+
+test_data1 <- data.frame(test_data)
+classes <- as.factor(training_data1$TDA_group)
+
+object <- naiveBayes(x=training_data1, y=classes, laplace = 0)
+test_data1$predict <- as.character(predict(object, test_data1))
+View(test_data1)
+test_data1$TDA_group <- as.character(test_data1$TDA_group)
+test_data1$result <- test_data1$predict == test_data1$TDA_group
+write.csv(test_data1,"Predicted Output for Naive Bayes.csv")
+
+#Calculate accuracy
+t <- length(test_data1$result[test_data1$result==TRUE])
+f <- length(test_data1$result[test_data1$result==FALSE])
+
+accuracy <- (t * 100)/(t+f)
+accuracy
+
+
+
+
+
+plot(RFaxis,RFay,
+     type="l", col="green", lwd=2,
+     xlab="Number of cases",
+     ylab="Number of successes",
+     main="Lift: Cum successes sorted by predicted value/success probability")
+lines(nbaxis,nbay,col="red",lwd=2)
+points(nbaxis,nbax,type="l",lwd=2)
+legend('topleft', lwd=2, x.intersp=.2, y.intersp=1,
+       c('Random Forest','Naive Bayes'),
+       col=c("green","red"), cex=1, bty = "n")
+
+
+
+
+
+
+
+

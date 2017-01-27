@@ -1,0 +1,123 @@
+---
+title: "Data Processing and Exploratory Data Analysis"
+author: "Neha Chanchlani, Hitesh Gupta and Prannoy Banerjee"
+date: "Thursday, February 25, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+setwd("C:/Users/Neha/Documents/737/Project")
+training_data <- read.csv("bank-additional-full-new.csv")
+test_data <- read.csv("bank_test_data.csv")
+
+#Data Processing
+
+training_data$TDA_group[training_data$term_deposit_amount< 5000] <- "<5000"
+training_data$TDA_group[training_data$term_deposit_amount>= 5000 & training_data$term_deposit_amount<=10000] <- "5000-10000"
+training_data$TDA_group[training_data$term_deposit_amount>= 10001 & training_data$term_deposit_amount<=15000] <- "10001-15000"
+training_data$TDA_group[training_data$term_deposit_amount>= 15001 & training_data$term_deposit_amount<=20000] <- "15001-20000"
+training_data$TDA_group[training_data$term_deposit_amount>= 20001 & training_data$term_deposit_amount<=25000] <- "20001-25000"
+training_data$TDA_group[training_data$term_deposit_amount> 25000] <- ">25000"
+
+training_data$age_group[training_data$age < 18] <- "<18"
+training_data$age_group[training_data$age >= 18 & training_data$age<=24] <- "18-24"
+training_data$age_group[training_data$age >= 25 & training_data$age<=34] <- "25-34"
+training_data$age_group[training_data$age >= 35 & training_data$age<=44] <- "35-44"
+training_data$age_group[training_data$age >= 45 & training_data$age<=54] <- "45-54"
+training_data$age_group[training_data$age >= 55 & training_data$age<=64] <- "55-64"
+training_data$age_group[training_data$age > 64] <- ">64"
+
+training_data$balance_group[training_data$balance < 5000] <- "<5000"
+training_data$balance_group[training_data$balance >= 5000 & training_data$balance<=10000] <- "5000-10000"
+training_data$balance_group[training_data$balance >= 10001 & training_data$balance<=15000] <- "10001-15000"
+training_data$balance_group[training_data$balance >= 15001 & training_data$balance<=20000] <- "15001-20000"
+training_data$balance_group[training_data$balance >= 20001 & training_data$balance<=25000] <- "20001-25000"
+training_data$balance_group[training_data$balance > 25000] <- ">25000"
+
+test_data$TDA_group[test_data$term_deposit_amount< 5000] <- "<5000"
+test_data$TDA_group[test_data$term_deposit_amount>= 5000 & test_data$term_deposit_amount<=10000] <- "5000-10000"
+test_data$TDA_group[test_data$term_deposit_amount>= 10001 & test_data$term_deposit_amount<=15000] <- "10001-15000"
+test_data$TDA_group[test_data$term_deposit_amount>= 15001 & test_data$term_deposit_amount<=20000] <- "15001-20000"
+test_data$TDA_group[test_data$term_deposit_amount>= 20001 & test_data$term_deposit_amount<=25000] <- "20001-25000"
+test_data$TDA_group[test_data$term_deposit_amount> 25000] <- ">25000"
+
+test_data$age_group[test_data$age < 18] <- "<18"
+test_data$age_group[test_data$age >= 18 & test_data$age<=24] <- "18-24"
+test_data$age_group[test_data$age >= 25 & test_data$age<=34] <- "25-34"
+test_data$age_group[test_data$age >= 35 & test_data$age<=44] <- "35-44"
+test_data$age_group[test_data$age >= 45 & test_data$age<=54] <- "45-54"
+test_data$age_group[test_data$age >= 55 & test_data$age<=64] <- "55-64"
+test_data$age_group[test_data$age > 64] <- ">64"
+
+test_data$balance_group[test_data$balance < 5000] <- "<5000"
+test_data$balance_group[test_data$balance >= 5000 & test_data$balance<=10000] <- "5000-10000"
+test_data$balance_group[test_data$balance >= 10001 & test_data$balance<=15000] <- "10001-15000"
+test_data$balance_group[test_data$balance >= 15001 & test_data$balance<=20000] <- "15001-20000"
+test_data$balance_group[test_data$balance >= 20001 & test_data$balance<=25000] <- "20001-25000"
+test_data$balance_group[test_data$balance > 25000] <- ">25000"
+
+newtrainingdata <- training_data[ which(training_data$y=='yes'), ]
+newtestdata <- test_data[ which(test_data$y=='yes'), ]
+write.csv(training_data, "New Training Data1.csv")
+training_data <- read.csv("New Training Data1.csv")
+
+#Exploratory Data Analysys
+library(ggplot2)
+library(plyr)
+
+
+# Histogram for age of customerss
+ggplot(data=training_data, aes(training_data$age)) + 
+  geom_histogram(aes(y =..density..), 
+                 breaks=seq(20, 50, by = 2), 
+                 col="red", 
+                 fill="green", 
+                 alpha = .2) + 
+  geom_density(col=2) + 
+  labs(title="Histogram for Age") +
+  labs(x="Age", y="Count")
+
+
+#Bar plot for occupation of users with there marital status
+ggplot(data=training_data, aes(training_data$job)) + geom_bar(aes(fill = training_data$marital))+ 
+  labs(title="Bar Plot for occupation of users (with their marital status)") +
+  labs(x="Occupation", y="Count")
+
+
+#Bar plot for occupation of users and whether they have subscribed for term deposit account or not
+ggplot(training_data,aes(job, fill = y)) + geom_bar()
+
+
+#Bar plot for age of users and whether they have subscribed for term deposit account or not
+ggplot(training_data,aes(age_group, fill = y)) + geom_bar()
+
+
+#Bar plot for number of users having TDA based on their age
+ggplot(newtrainingdata,aes(age_group, fill = y)) + geom_bar(col="blue", fill="blue")
+
+
+#Bar plot for number of users having TDA based on their education
+ggplot(newtrainingdata,aes(education, fill = y)) + geom_bar(col="blue", fill="green")
+
+
+#Graph of Term Deposit amount based on age group
+newPlot <- ggplot(newtrainingdata, aes(x = age_group,y = term_deposit_amount,title = "Distribution of Term Deposit Amount over age groups"))
+newPlot + geom_bar(stat= "identity", aes(color = factor(newtrainingdata$age_group))) + scale_y_continuous()
+
+
+#Graph of Term Deposit amount based on job
+newPlot1 <- ggplot(newtrainingdata, aes(x = job,y = term_deposit_amount,title = "Distribution of Term Deposit Amount over different jobs"))
+newPlot1 + geom_bar(stat= "identity", aes(color = factor(newtrainingdata$job))) + scale_y_continuous()
+
+
+#Distribution of Term Deposit Amount over multiple days
+totalPlot <- ggplot(newtrainingdata, aes(x = day_of_week,y = term_deposit_amount,title = "Distribution of Term Deposit Amount over multiple days"))
+totalPlot + geom_bar(stat= "identity", aes(color = newtrainingdata$term_deposit_amount)) + scale_y_continuous() + facet_grid(age_group ~ .)
+
+```
+
